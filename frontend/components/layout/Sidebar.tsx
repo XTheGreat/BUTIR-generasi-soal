@@ -68,7 +68,7 @@ export default function Sidebar({
   }, [pathname]);
 
   const navInner = (
-    <div className="w-[240px] h-full flex flex-col justify-between border-r border-[var(--line)] bg-[var(--surface)] select-none">
+    <div className="w-[240px] h-full flex flex-col justify-between border-r border-[var(--line)] bg-[var(--canvas)] select-none">
       
       <div>
         <div className="px-5 py-4 border-b border-[var(--accent)] bg-[var(--accent)] flex items-center justify-between">
