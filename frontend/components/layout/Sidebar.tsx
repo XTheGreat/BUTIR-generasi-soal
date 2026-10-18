@@ -120,7 +120,7 @@ export default function Sidebar({
                     <div className="relative inline-flex flex-col items-start min-w-0">
                       <span className="truncate">{item.label}</span>
                       <span
-                        className={`h-[1.5px] bg-[var(--accent)] transition-all duration-300 ease-out origin-left mt-0.5 ${
+                        className={`h-[2px] bg-[var(--accent)] transition-all duration-300 ease-out origin-left mt-0.5 ${
                           active
                             ? "w-full"
                             : "w-0 group-hover:w-full group-hover:opacity-30"
