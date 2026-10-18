@@ -71,21 +71,21 @@ export default function Sidebar({
     <div className="w-[240px] h-full flex flex-col justify-between border-r border-[var(--line)] bg-[var(--surface)] select-none">
       
       <div>
-        <div className="px-5 py-4 border-b border-[var(--line)] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--accent)] bg-[var(--accent)] flex items-center justify-between">
           <Link
             href="/dashboard"
             className="block focus-visible:outline-none group"
           >
-            <span className="font-serif text-xl font-medium tracking-tight text-[var(--ink)] block group-hover:text-[var(--accent)] transition-colors">
+            <span className="font-serif text-xl font-medium tracking-tight text-white block">
               BUTIR
             </span>
-            <span className="font-sans text-[11px] text-[var(--ink-muted)] block mt-0.5">
+            <span className="font-sans text-[11px] text-white/80 block mt-0.5">
               Sistem Validasi Naskah
             </span>
           </Link>
           <button
             onClick={onToggle || onClose}
-            className="p-1 rounded text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--line)]/40 transition-colors focus-visible:outline-none"
+            className="p-1 rounded text-white/80 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none"
             aria-label="Tutup navigasi"
             title="Tutup bilah samping"
           >

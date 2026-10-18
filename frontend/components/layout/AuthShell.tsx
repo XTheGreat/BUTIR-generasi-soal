@@ -17,63 +17,63 @@ export default function AuthShell({
   return (
     <div className="min-h-screen bg-[var(--canvas)] flex flex-col lg:flex-row text-[var(--ink)]">
       
-      <div className="lg:w-[480px] xl:w-[540px] shrink-0 bg-[var(--surface)] border-b lg:border-b-0 lg:border-r border-[var(--line)] p-8 lg:p-14 flex flex-col justify-between">
+      <div className="lg:w-[480px] xl:w-[540px] shrink-0 bg-[var(--accent)] border-b lg:border-b-0 lg:border-r border-[var(--accent)] p-8 lg:p-14 flex flex-col justify-between text-white">
         <div>
           <div className="mb-10">
             <Link href="/" className="inline-block focus-visible:outline-none">
-              <span className="font-serif text-3xl font-medium tracking-tight text-[var(--ink)] block">
+              <span className="font-serif text-3xl font-medium tracking-tight text-white block">
                 BUTIR
               </span>
-              <span className="text-xs text-[var(--ink-muted)] block mt-0.5 font-sans">
+              <span className="text-xs text-white/80 block mt-0.5 font-sans">
                 Sistem Naskah Ujian
               </span>
             </Link>
           </div>
 
-          <p className="text-sm text-[var(--ink)] leading-relaxed mb-10 max-w-sm">
+          <p className="text-sm text-white/90 leading-relaxed mb-10 max-w-sm">
             Sistem validasi dan standardisasi butir soal ujian akademik berbasis simulasi deliberasi agen kecerdasan buatan.
           </p>
 
-          <div className="border-t border-[var(--line)] pt-8">
-            <div className="text-xs font-medium text-[var(--ink-muted)] mb-4 font-sans">
+          <div className="border-t border-white/20 pt-8">
+            <div className="text-xs font-medium text-white mb-4 font-sans uppercase tracking-wider">
               Alur Kerja Sistem
             </div>
-            <ol className="space-y-4 text-xs text-[var(--ink)]">
+            <ol className="space-y-4 text-xs text-white">
               <li className="flex items-start gap-3">
-                <span className="font-mono text-[var(--ink-muted)] text-[11px] pt-0.5">
+                <span className="font-mono text-white/80 text-[11px] pt-0.5">
                   01
                 </span>
                 <div>
-                  <span className="font-medium block text-[var(--ink)]">
+                  <span className="font-medium block text-white">
                     Penyusunan Kisi-kisi
                   </span>
-                  <span className="text-[var(--ink-muted)] leading-normal block mt-0.5">
+                  <span className="text-white/85 leading-normal block mt-0.5">
                     Penetapan materi ajar dan proporsi Taksonomi Bloom (C1–C6).
                   </span>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <span className="font-mono text-[var(--ink-muted)] text-[11px] pt-0.5">
+                <span className="font-mono text-white/80 text-[11px] pt-0.5">
                   02
                 </span>
                 <div>
-                  <span className="font-medium block text-[var(--ink)]">
+                  <span className="font-medium block text-white">
                     Debat Multi-Agen
                   </span>
-                  <span className="text-[var(--ink-muted)] leading-normal block mt-0.5">
+                  <span className="text-white/85 leading-normal block mt-0.5">
                     Telaah kritis empat agen (Penyusun, Kritikus, Penjawab Buta, Arbiter).
                   </span>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <span className="font-mono text-[var(--ink-muted)] text-[11px] pt-0.5">
+                <span className="font-mono text-white/80 text-[11px] pt-0.5">
                   03
                 </span>
                 <div>
-                  <span className="font-medium block text-[var(--ink)]">
+                  <span className="font-medium block text-white">
                     Perakitan & Evaluasi
                   </span>
-                  <span className="text-[var(--ink-muted)] leading-normal block mt-0.5">
+                  <span className="text-white/85 leading-normal block mt-0.5">
                     Penerbitan kode ujian siswa dan kalibrasi empiris daya beda butir.
                   </span>
                 </div>
@@ -82,7 +82,7 @@ export default function AuthShell({
           </div>
         </div>
 
-        <div className="text-[11px] text-[var(--ink-muted)] font-mono pt-8 border-t border-[var(--line)] mt-8 lg:mt-0">
+        <div className="text-[11px] text-white/80 font-mono pt-8 border-t border-white/20 mt-8 lg:mt-0">
           Standar Evaluasi Naskah Akademik
         </div>
       </div>
