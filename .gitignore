@@ -1,51 +1,33 @@
-# Dependencies & Environments
 node_modules/
 venv/
 .venv/
 env/
 .pnpm-store/
-
-# Python cache & build artifacts
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.egg-info/
 .pytest_cache/
-
-# Environment Variables & Secrets (SANGAT PENTING - JANGAN DI-PUSH)
 .env
 .env.local
 .env.*.local
 .env.production
 .env.development
 !*.example
-
-# Local Database & User Uploads
 *.db
 *.sqlite
 *.sqlite3
 uploads/
 backend/uploads/
-
-# Build & Next.js cache
 .next/
 dist/
 build/
 .turbo/
 *.tsbuildinfo
-
-# OS & Editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
-# AI Agent & Internal Guidelines (sesuai instruksi)
-AGENTS.md
-*/AGENTS.md
-CLAUDE.md
-*/CLAUDE.md
-DESIGN.md
-*/DESIGN.md
-frontend/README.md
+**/*.md
+!/README.md
