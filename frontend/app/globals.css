@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-status-diterima: var(--status-diterima);
+  --color-status-diterima-bg: var(--status-diterima-bg);
+  --color-status-ditandai: var(--status-ditandai);
+  --color-status-ditandai-bg: var(--status-ditandai-bg);
+  --color-status-ditolak: var(--status-ditolak);
+  --color-status-ditolak-bg: var(--status-ditolak-bg);
+  --color-status-debating: var(--status-debating);
+  --color-status-debating-bg: var(--status-debating-bg);
+  --color-status-netral: var(--status-netral);
+  --color-status-netral-bg: var(--status-netral-bg);
+
+  --font-serif: 'Merriweather', Georgia, serif;
+  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+}
+
+:root {
+  --canvas: #FFFFFF;
+  --surface: #FAF9F6;
+  --ink: #181C25;
+  --ink-muted: #5A6070;
+  --line: #E7E4DC;
+  --line-strong: #8C8778;
+  --accent: #0F5F66;
+  --accent-soft: #E6F1F1;
+
+  --status-diterima: #1F6B3A;
+  --status-diterima-bg: #E8F3EB;
+  --status-ditandai: #8A5A00;
+  --status-ditandai-bg: #FBF1D9;
+  --status-ditolak: #A4262C;
+  --status-ditolak-bg: #FBEAEA;
+  --status-debating: #0F5F66;
+  --status-debating-bg: #E6F1F1;
+  --status-netral: #5A6070;
+  --status-netral-bg: #FAF9F6;
+
+  --shadow-overlay: 0 4px 16px -2px rgba(24, 28, 37, 0.08);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--canvas);
+  color: var(--ink);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Heading balance and line heights */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* Global focus visible ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
