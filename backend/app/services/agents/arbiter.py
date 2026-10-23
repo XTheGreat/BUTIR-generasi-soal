@@ -33,8 +33,11 @@ async def jalankan(draft: dict, hasil_kritikus: dict, hasil_penjawab: dict, rond
         penjawab_json=json.dumps(hasil_penjawab, ensure_ascii=False),
     )
 
-    provider = settings.DEFAULT_PROVIDER
-    if provider == "groq":
+    if settings.DEFAULT_PROVIDER == "openai" and settings.get_openai_keys():
+        provider = "openai"
+        model = settings.OPENAI_MODEL_ARBITER
+    elif settings.DEFAULT_PROVIDER == "groq":
+        provider = "groq"
         model = settings.GROQ_MODEL_ARBITER
     else:
         provider = "sambanova"
@@ -48,5 +51,3 @@ async def jalankan(draft: dict, hasil_kritikus: dict, hasil_penjawab: dict, rond
         max_tokens=400,
     )
     return result
-
-

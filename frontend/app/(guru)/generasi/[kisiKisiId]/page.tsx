@@ -11,6 +11,9 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import BloomChip from "@/components/ui/BloomChip";
 import RondeIndicator from "@/components/ui/RondeIndicator";
 
+const sedangBerjalan = (status: string) =>
+  status === "draft" || status === "debating";
+
 function renderRondePip(ronde: number, maxRonde = 3) {
   return <RondeIndicator ronde={ronde} maxRonde={maxRonde} />;
 }
@@ -51,7 +54,7 @@ export default function GenerasiPage() {
     const interval = setInterval(async () => {
       const data = await loadStatus();
       if (data && data.total > 0) {
-        if (data.selesai === data.total) {
+        if (!data.items.some((item: { status: string }) => sedangBerjalan(item.status))) {
           setPolling(false);
           try {
             localStorage.removeItem("butir_active_generation");
@@ -74,7 +77,7 @@ export default function GenerasiPage() {
       const data = await loadStatus();
       if (data && data.total > 0) {
         setStarted(true);
-        if (data.selesai < data.total) {
+        if (data.items.some((item: { status: string }) => sedangBerjalan(item.status))) {
           setPolling(true);
           try {
             localStorage.setItem("butir_active_generation", JSON.stringify({ id: kisiKisiId }));
@@ -94,12 +97,20 @@ export default function GenerasiPage() {
     checkInitial();
   }, [loadStatus, kisiKisiId]);
 
-  const isComplete =
-    status && status.total > 0 && status.selesai === status.total;
+  // Butir 'tertunda' dihitung sudah diproses: ia menunggu tindakan guru di halaman
+  // Butir Tertunda, sehingga sinkronisasi live tidak perlu terus berjalan.
+  const jumlahDiproses = status
+    ? status.items.filter((item) => !sedangBerjalan(item.status)).length
+    : 0;
+  const jumlahTertunda = status
+    ? status.items.filter((item) => item.status === "tertunda").length
+    : 0;
+
+  const isComplete = !!status && status.total > 0 && jumlahDiproses === status.total;
 
   const progressPercent =
     status && status.total > 0
-      ? Math.round((status.selesai / status.total) * 100)
+      ? Math.round((jumlahDiproses / status.total) * 100)
       : 0;
 
   return (
@@ -166,7 +177,7 @@ export default function GenerasiPage() {
           <div className="border border-[var(--line)] bg-[var(--surface)] p-5 rounded-lg">
             <div className="flex items-center justify-between text-xs mb-2">
               <div className="font-serif text-sm font-normal text-[var(--ink)]">
-                {status.selesai} dari {status.total} butir selesai{" "}
+                {jumlahDiproses} dari {status.total} butir diproses{" "}
                 <span className="font-sans text-xs text-[var(--ink-muted)]">({progressPercent}%)</span>
               </div>
               {polling ? (
@@ -191,6 +202,19 @@ export default function GenerasiPage() {
               <p className="mt-3 text-[11px] text-[var(--ink-muted)] leading-relaxed">
                 Proses deliberasi 4 agen AI dijalankan di latar belakang server. Anda dapat berpindah halaman atau meninggalkan laman ini dengan aman tanpa khawatir progres hilang. Tombol kembali ke debat akan muncul di bilah atas jika Anda berpindah ke halaman lain.
               </p>
+            )}
+
+            {jumlahTertunda > 0 && (
+              <div className="mt-4 pt-3 border-t border-[var(--line)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs text-[var(--ink-muted)] leading-relaxed">
+                  {jumlahTertunda} butir berstatus <span className="font-mono text-[var(--ink)]">tertunda</span> karena kendala panggilan agen. Jika terdapat butir tertunda, pergi ke halaman Butir Tertunda lalu ulangi butir.
+                </div>
+                <Link href="/butir-tertunda" className="shrink-0">
+                  <Button size="sm" variant="secondary" className="text-xs">
+                    Buka Butir Tertunda
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
 

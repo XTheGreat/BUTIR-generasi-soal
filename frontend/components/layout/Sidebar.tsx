@@ -4,38 +4,58 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { PanelLeftClose } from "lucide-react";
+import {
+  Archive,
+  BookOpen,
+  CalendarCheck,
+  ClipboardList,
+  Flag,
+  Hourglass,
+  LayoutDashboard,
+  Layers,
+  PanelLeftClose,
+  type LucideIcon,
+} from "lucide-react";
+import HistoryDebat from "@/components/layout/HistoryDebat";
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  isMarkedCount?: boolean;
+  isPendingCount?: boolean;
+}
 
 interface NavGroup {
   group?: string;
-  items: {
-    href: string;
-    label: string;
-    isMarkedCount?: boolean;
-  }[];
+  items: NavItem[];
 }
 
 const navGroups: NavGroup[] = [
   {
-    items: [{ href: "/dashboard", label: "Dashboard" }],
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
     group: "Persiapan",
     items: [
-      { href: "/materi", label: "Materi Ajar" },
-      { href: "/kisi-kisi", label: "Kisi-kisi" },
+      { href: "/materi", label: "Materi Ajar", icon: BookOpen },
+      { href: "/kisi-kisi", label: "Kisi-kisi", icon: ClipboardList },
     ],
   },
   {
     group: "Telaah",
     items: [
-      { href: "/butir-ditandai", label: "Butir Ditandai", isMarkedCount: true },
-      { href: "/bank-soal", label: "Bank Soal" },
+      { href: "/butir-ditandai", label: "Butir Ditandai", icon: Flag, isMarkedCount: true },
+      { href: "/butir-tertunda", label: "Butir Tertunda", icon: Hourglass, isPendingCount: true },
+      { href: "/bank-soal", label: "Bank Soal", icon: Archive },
     ],
   },
   {
     group: "Ujian",
-    items: [{ href: "/rakit-ujian", label: "Rakit Ujian" }],
+    items: [
+      { href: "/daftar-ujian", label: "Daftar Ujian", icon: CalendarCheck },
+      { href: "/rakit-ujian", label: "Rakit Ujian", icon: Layers },
+    ],
   },
 ];
 
@@ -52,6 +72,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [markedCount, setMarkedCount] = useState<number | null>(null);
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -62,42 +83,49 @@ export default function Sidebar({
         }
       })
       .catch(() => {});
+    apiFetch("/api/butir/tertunda")
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setPendingCount(data.filter((b) => b.status === "tertunda").length);
+        }
+      })
+      .catch(() => {});
     return () => {
       isMounted = false;
     };
   }, [pathname]);
 
   const navInner = (
-    <div className="w-[240px] h-full flex flex-col justify-between border-r border-[var(--line)] bg-[var(--canvas)] select-none">
-      
-      <div>
-        <div className="px-5 py-4 border-b border-[var(--accent)] bg-[var(--accent)] flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="block focus-visible:outline-none group"
-          >
-            <span className="font-serif text-xl font-medium tracking-tight text-white block">
-              BUTIR
-            </span>
-            <span className="font-sans text-[11px] text-white/80 block mt-0.5">
-              Sistem Validasi Naskah
-            </span>
-          </Link>
-          <button
-            onClick={onToggle || onClose}
-            className="p-1 rounded text-white/80 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none"
-            aria-label="Tutup navigasi"
-            title="Tutup bilah samping"
-          >
-            <PanelLeftClose size={16} strokeWidth={1.5} />
-          </button>
-        </div>
+    <div className="w-[240px] h-full flex flex-col border-r border-[var(--line)] bg-[var(--canvas)] select-none">
+      <div className="shrink-0 px-5 py-4 border-b border-[var(--accent)] bg-[var(--accent)] flex items-center justify-between">
+        <Link
+          href="/dashboard"
+          className="block focus-visible:outline-none group"
+        >
+          <span className="font-serif text-xl font-medium tracking-tight text-white block">
+            BUTIR
+          </span>
+          <span className="font-sans text-[11px] text-white/80 block mt-0.5">
+            Sistem Validasi Naskah
+          </span>
+        </Link>
+        <button
+          onClick={onToggle || onClose}
+          className="shrink-0 rounded p-1.5 text-white/75 transition-colors duration-[140ms] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          aria-label="Tutup navigasi"
+          title="Tutup bilah samping"
+        >
+          <PanelLeftClose size={16} strokeWidth={1.5} />
+        </button>
+      </div>
 
-        <nav className="py-4 px-3 space-y-4 overflow-y-auto max-h-[calc(100vh-120px)]">
+      {/* Satu-satunya area gulir sidebar: menu + History bergulir bersama. */}
+      <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:var(--line-strong)_transparent]">
+        <nav className="px-3 pb-3 pt-4 space-y-5" aria-label="Navigasi utama">
           {navGroups.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-1">
+            <div key={gIdx} className="space-y-0.5">
               {group.group && (
-                <div className="px-3 pt-2 pb-1 text-[11px] font-sans font-semibold text-[var(--ink-muted)]">
+                <div className="px-3 pb-1.5 font-sans text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">
                   {group.group}
                 </div>
               )}
@@ -106,33 +134,55 @@ export default function Sidebar({
                   item.href === "/dashboard"
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
+                const Icon = item.icon;
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`group flex items-center justify-between px-3 py-2 text-[15px] font-serif transition-colors ${
+                    aria-current={active ? "page" : undefined}
+                    className={`group flex items-center gap-3 rounded px-3 py-2 font-serif text-[14.5px] transition-colors duration-[140ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                       active
-                        ? "text-[var(--ink)] font-medium"
-                        : "text-[var(--ink-muted)] hover:text-[var(--ink)] font-normal"
+                        ? "font-medium text-[var(--ink)]"
+                        : "text-[var(--ink-muted)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
                     }`}
                   >
-                    <div className="relative inline-flex flex-col items-start min-w-0">
+                    <Icon
+                      size={17}
+                      strokeWidth={1.6}
+                      aria-hidden="true"
+                      className={`shrink-0 transition-colors duration-[140ms] ${
+                        active
+                          ? "text-[var(--accent)]"
+                          : "text-[var(--ink-muted)] group-hover:text-[var(--ink)]"
+                      }`}
+                    />
+                    {/* Garis bawah label: penuh saat aktif, muncul perlahan saat hover */}
+                    <span className="relative inline-flex min-w-0 flex-col items-start">
                       <span className="truncate">{item.label}</span>
                       <span
-                        className={`h-[2px] bg-[var(--accent)] transition-all duration-300 ease-out origin-left mt-0.5 ${
+                        aria-hidden="true"
+                        className={`mt-0.5 h-[2px] origin-left bg-[var(--accent)] transition-all duration-300 ease-out ${
                           active
                             ? "w-full"
                             : "w-0 group-hover:w-full group-hover:opacity-30"
                         }`}
                       />
-                    </div>
+                    </span>
 
                     {item.isMarkedCount &&
                       markedCount !== null &&
                       markedCount > 0 && (
-                        <span className="font-sans text-[11px] px-1.5 py-0.2 rounded bg-[var(--canvas)] text-[#8A5A00] border border-[#8A5A00]/30 font-semibold tabular-nums shrink-0">
+                        <span className="ml-auto shrink-0 rounded border border-[#8A5A00]/30 bg-[var(--canvas)] px-1.5 font-sans text-[11px] font-semibold tabular-nums text-[#8A5A00]">
                           {markedCount}
+                        </span>
+                      )}
+
+                    {item.isPendingCount &&
+                      pendingCount !== null &&
+                      pendingCount > 0 && (
+                        <span className="ml-auto shrink-0 rounded border border-dashed border-[var(--line-strong)] bg-[var(--canvas)] px-1.5 font-sans text-[11px] font-semibold tabular-nums text-[var(--ink-muted)]">
+                          {pendingCount}
                         </span>
                       )}
                   </Link>
@@ -141,17 +191,19 @@ export default function Sidebar({
             </div>
           ))}
         </nav>
+
+        <HistoryDebat />
       </div>
 
-      <div className="p-4 border-t border-[var(--line)] text-[11px] text-[var(--ink-muted)] font-sans">
-        BUTIR v1.0
+      <div className="shrink-0 flex items-center justify-between border-t border-[var(--line)] px-4 py-3 font-mono text-[10px] tracking-wide text-[var(--ink-muted)]">
+        <span>BUTIR</span>
+        <span className="tabular-nums">v1.0</span>
       </div>
     </div>
   );
 
   return (
     <>
-      
       <aside
         className={`hidden md:block sticky top-0 h-screen shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-30 ${
           isOpen
@@ -170,7 +222,7 @@ export default function Sidebar({
         }`}
       >
         <div
-          className={`fixed inset-0 bg-[var(--ink)]/40 backdrop-blur-xs transition-opacity duration-300 ${
+          className={`fixed inset-0 bg-[var(--ink)]/40 transition-opacity duration-300 ${
             isOpen ? "opacity-100" : "opacity-0"
           }`}
           onClick={onClose}

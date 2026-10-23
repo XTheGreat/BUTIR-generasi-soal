@@ -14,6 +14,34 @@ from app.core.deps import get_current_guru
 router = APIRouter(prefix="/api/ujian", tags=["ujian"])
 
 
+@router.get("", response_model=list[PaketUjianResponse])
+async def list_ujian(
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(PaketUjian)
+        .where(PaketUjian.guru_id == guru.id)
+        .order_by(PaketUjian.created_at.desc())
+    )
+    return [PaketUjianResponse.model_validate(p) for p in result.scalars().all()]
+
+
+@router.get("/{ujian_id}/peserta-count")
+async def get_peserta_count(
+    ujian_id: uuid.UUID,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.jawaban_siswa import JawabanSiswa
+    from sqlalchemy import func
+    result = await db.execute(
+        select(func.count(func.distinct(JawabanSiswa.nama_siswa)))
+        .where(JawabanSiswa.paket_ujian_id == ujian_id)
+    )
+    return {"count": result.scalar() or 0}
+
+
 @router.post("", response_model=PaketUjianResponse, status_code=201)
 async def create_ujian(
     data: PaketUjianCreate,

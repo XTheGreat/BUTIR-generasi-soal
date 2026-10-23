@@ -11,7 +11,8 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import BloomChip from "@/components/ui/BloomChip";
 import PipMeter from "@/components/ui/PipMeter";
 import RondeIndicator from "@/components/ui/RondeIndicator";
-import { Key } from "lucide-react";
+import { Lock, PackageOpen } from "lucide-react";
+import MathText from "@/components/ui/MathText";
 
 const agenLabels: Record<string, { role: string; model: string }> = {
   penyusun: { role: "Agen Penyusun", model: "SambaNova / Llama 3.3" },
@@ -100,7 +101,7 @@ export default function DebatLogPage({
         ]}
       />
 
-      <div className="w-full pb-24">
+      <div className="w-full">
         {loading ? (
         <div className="border border-[var(--line)] bg-[var(--surface)] p-8 text-center text-xs text-[var(--ink-muted)] font-mono">
           Memuat riwayat debat butir...
@@ -123,7 +124,7 @@ export default function DebatLogPage({
 
               <div className="mb-4">
                 <p className="font-serif text-base sm:text-lg text-[var(--ink)] leading-relaxed">
-                  {butir.pertanyaan}
+                  <MathText text={butir.pertanyaan} />
                 </p>
               </div>
 
@@ -143,12 +144,14 @@ export default function DebatLogPage({
                         {key}.
                       </span>
                       <span className="font-serif flex-1 leading-normal">
-                        {val}
+                        <MathText text={val} />
                       </span>
                       {isKey && (
-                        <span className="inline-flex items-center gap-1.5 font-sans text-xs text-[#1F6B3A] font-medium shrink-0 pt-0.5">
-                          <Key size={13} strokeWidth={2} />
-                          <span>Kunci</span>
+                        <span
+                          className="inline-flex items-center text-[#1F6B3A] shrink-0 pt-0.5"
+                          title="Kunci jawaban"
+                        >
+                          <Lock size={14} strokeWidth={2} aria-label="Kunci jawaban" />
                         </span>
                       )}
                     </div>
@@ -162,7 +165,7 @@ export default function DebatLogPage({
                     Pembahasan Kunci
                   </div>
                   <p className="font-serif text-[var(--ink)] leading-relaxed">
-                    {butir.pembahasan}
+                    <MathText text={butir.pembahasan} />
                   </p>
                 </div>
               )}
@@ -175,145 +178,164 @@ export default function DebatLogPage({
             </h2>
 
             {Object.keys(rondeMap).length === 0 ? (
-              <p className="text-xs text-[var(--ink-muted)] font-mono">
-                Belum ada rekaman log debat yang tercatat.
-              </p>
+              <div className="border border-dashed border-[var(--line-strong)]/40 bg-[var(--surface)]/40 p-8 text-center text-xs text-[var(--ink-muted)] rounded-lg flex flex-col items-center justify-center gap-2 select-none">
+                <PackageOpen
+                  size={40}
+                  strokeWidth={1.25}
+                  className="text-[var(--ink-muted)]/65"
+                />
+                <span>Belum ada rekaman log debat yang tercatat.</span>
+              </div>
             ) : (
-              Object.entries(rondeMap).map(([ronde, entries]) => (
-                <div
-                  key={ronde}
-                  className="border-l-2 border-[var(--line-strong)] pl-5 ml-2 space-y-5"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] -ml-[27px] ring-4 ring-[var(--canvas)]" />
-                    <span className="font-mono text-xs font-semibold text-[var(--ink)]">
-                      Ronde {ronde}
-                    </span>
-                  </div>
+              <div>
+                {Object.entries(rondeMap).map(([ronde, entries]) => (
+                  <div
+                    key={ronde}
+                    className="grid grid-cols-[20px_minmax(0,1fr)] gap-x-4"
+                  >
+                    {/* Rel timeline: bulatan dan garis berbagi kolom yang sama dan
+                        sama-sama terpusat, jadi selalu sejajar. */}
+                    <div className="flex flex-col items-center" aria-hidden="true">
+                      <span className="h-5 flex items-center">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />
+                      </span>
+                      <span className="flex-1 w-[2px] bg-[var(--line-strong)]" />
+                    </div>
 
-                  {entries.map((log) => {
-                    const agentMeta = agenLabels[log.agen] || {
-                      role: log.agen.toUpperCase(),
-                      model: "Agen AI",
-                    };
-                    const output = log.output_json || {};
-
-                    return (
-                      <div
-                        key={log.id}
-                        className="border border-[var(--line)] bg-[var(--canvas)] p-4 rounded-none"
-                      >
-                        
-                        <div className="flex items-center justify-between pb-2 mb-3 border-b border-[var(--line)]">
-                          <span className="font-mono text-xs font-semibold tracking-wider text-[var(--ink)]">
-                            {agentMeta.role}
-                          </span>
-                          <span className="font-mono text-[11px] text-[var(--ink-muted)]">
-                            {agentMeta.model}
-                          </span>
-                        </div>
-
-                        {log.agen === "kritikus" && (
-                          <div className="space-y-3">
-                            {output.skor_rubrik && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[var(--surface)] p-3 border border-[var(--line)]">
-                                {Object.entries(output.skor_rubrik).map(
-                                  ([kriteria, skor]) => (
-                                    <PipMeter
-                                      key={kriteria}
-                                      label={kriteria
-                                        .replace(/_/g, " ")
-                                        .replace(/\b\w/g, (c) => c.toUpperCase())}
-                                      score={typeof skor === "number" ? skor : 3}
-                                      maxScore={5}
-                                    />
-                                  )
-                                )}
-                              </div>
-                            )}
-
-                            {output.catatan_kritis && (
-                              <div className="text-xs text-[var(--ink)] leading-relaxed">
-                                <span className="font-sans text-xs text-[var(--ink-muted)] block mb-0.5">
-                                  Catatan Kritis:
-                                </span>
-                                <p className="font-serif bg-[var(--surface)] p-2.5 border border-[var(--line)]">
-                                  {output.catatan_kritis}
-                                </p>
-                              </div>
-                            )}
-
-                            {output.rekomendasi_revisi && (
-                              <div className="text-xs text-[var(--ink)] leading-relaxed">
-                                <span className="font-sans text-xs text-[var(--ink-muted)] block mb-0.5">
-                                  Arahan Revisi:
-                                </span>
-                                <p className="font-serif">
-                                  {output.rekomendasi_revisi}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {log.agen === "arbiter" && (
-                          <div className="border border-[var(--ink)] p-3.5 bg-[var(--surface)]">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-mono text-xs font-semibold text-[var(--ink)]">
-                                Putusan Arbiter
-                              </span>
-                              <StatusBadge
-                                status={
-                                  output.status || output.verdict || "ditandai"
-                                }
-                              />
-                            </div>
-                            <p className="font-serif text-sm text-[var(--ink)] leading-relaxed">
-                              {output.alasan_putusan ||
-                                output.alasan ||
-                                output.catatan ||
-                                "Tidak ada uraian putusan spesifik."}
-                            </p>
-                          </div>
-                        )}
-
-                        {log.agen === "penjawab_buta" && (
-                          <div className="text-xs space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[var(--ink-muted)]">
-                                Jawaban Dipilih:
-                              </span>
-                              <span className="font-mono font-bold text-sm text-[var(--ink)] px-2 py-0.5 border border-[var(--line)] bg-[var(--surface)]">
-                                {output.jawaban_terpilih || output.jawaban || "-"}
-                              </span>
-                            </div>
-                            {output.alasan && (
-                              <p className="font-serif text-[var(--ink)] text-xs leading-relaxed bg-[var(--surface)] p-2 border border-[var(--line)]">
-                                {output.alasan}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {log.agen === "penyusun" && (
-                          <div className="text-xs text-[var(--ink-muted)] font-serif leading-relaxed">
-                            <p className="line-clamp-2">
-                              {output.pertanyaan || "Naskah draf butir soal."}
-                            </p>
-                          </div>
-                        )}
+                    <div className="min-w-0 pb-6 last:pb-0">
+                      <div className="h-5 flex items-center font-mono text-xs font-semibold text-[var(--ink)]">
+                        Ronde {ronde}
                       </div>
-                    );
-                  })}
-                </div>
-              ))
+
+                      <div className="mt-3 space-y-5">
+                        {entries.map((log) => {
+                          const agentMeta = agenLabels[log.agen] || {
+                            role: log.agen.toUpperCase(),
+                            model: "Agen AI",
+                          };
+                          const output = log.output_json || {};
+
+                          return (
+                            <div
+                              key={log.id}
+                              className="border border-[var(--line)] bg-[var(--canvas)] p-4 rounded-none"
+                            >
+                        
+                              <div className="flex items-center justify-between pb-2 mb-3 border-b border-[var(--line)]">
+                                <span className="font-mono text-xs font-semibold tracking-wider text-[var(--ink)]">
+                                  {agentMeta.role}
+                                </span>
+                                <span className="font-mono text-[11px] text-[var(--ink-muted)]">
+                                  {agentMeta.model}
+                                </span>
+                              </div>
+
+                              {log.agen === "kritikus" && (
+                                <div className="space-y-3">
+                                  {output.skor_rubrik && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[var(--surface)] p-3 border border-[var(--line)]">
+                                      {Object.entries(output.skor_rubrik).map(
+                                        ([kriteria, skor]) => (
+                                          <PipMeter
+                                            key={kriteria}
+                                            label={kriteria
+                                              .replace(/_/g, " ")
+                                              .replace(/\b\w/g, (c) => c.toUpperCase())}
+                                            score={typeof skor === "number" ? skor : 3}
+                                            maxScore={5}
+                                          />
+                                        )
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {output.catatan_kritis && (
+                                    <div className="text-xs text-[var(--ink)] leading-relaxed">
+                                      <span className="font-sans text-xs text-[var(--ink-muted)] block mb-0.5">
+                                        Catatan Kritis:
+                                      </span>
+                                      <p className="font-serif bg-[var(--surface)] p-2.5 border border-[var(--line)]">
+                                        {output.catatan_kritis}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {output.rekomendasi_revisi && (
+                                    <div className="text-xs text-[var(--ink)] leading-relaxed">
+                                      <span className="font-sans text-xs text-[var(--ink-muted)] block mb-0.5">
+                                        Arahan Revisi:
+                                      </span>
+                                      <p className="font-serif">
+                                        {output.rekomendasi_revisi}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {log.agen === "arbiter" && (
+                                <div className="border border-[var(--ink)] p-3.5 bg-[var(--surface)]">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="font-mono text-xs font-semibold text-[var(--ink)]">
+                                      Putusan Arbiter
+                                    </span>
+                                    <StatusBadge
+                                      status={
+                                        output.status || output.verdict || "ditandai"
+                                      }
+                                    />
+                                  </div>
+                                  <p className="font-serif text-sm text-[var(--ink)] leading-relaxed">
+                                    {output.alasan_putusan ||
+                                      output.alasan ||
+                                      output.catatan ||
+                                      "Tidak ada uraian putusan spesifik."}
+                                  </p>
+                                </div>
+                              )}
+
+                              {log.agen === "penjawab_buta" && (
+                                <div className="text-xs space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[var(--ink-muted)]">
+                                      Jawaban Dipilih:
+                                    </span>
+                                    <span className="font-mono font-bold text-sm text-[var(--ink)] px-2 py-0.5 border border-[var(--line)] bg-[var(--surface)]">
+                                      {output.jawaban_terpilih || output.jawaban || "-"}
+                                    </span>
+                                  </div>
+                                  {output.alasan && (
+                                    <p className="font-serif text-[var(--ink)] text-xs leading-relaxed bg-[var(--surface)] p-2 border border-[var(--line)]">
+                                      {output.alasan}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {log.agen === "penyusun" && (
+                                <div className="text-xs text-[var(--ink-muted)] font-serif leading-relaxed">
+                                  <p className="line-clamp-2">
+                                    <MathText text={output.pertanyaan || "Naskah draf butir soal."} />
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </section>
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 md:left-[232px] bg-[var(--canvas)] border-t border-[var(--line)] py-3 px-6 z-20">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      {/* Sticky di dalam kolom konten (bukan fixed): lebarnya selalu mengikuti konten,
+          baik sidebar terbuka maupun tertutup, dan tidak menimpa scrollbar kolom. */}
+      <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 lg:-mx-8 -mb-4 sm:-mb-6 lg:-mb-8 mt-6 bg-[var(--canvas)] border-t border-[var(--line)] py-3 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between">
           <Link href="/butir-ditandai">
             <Button variant="secondary" size="sm">
               Kembali ke Daftar

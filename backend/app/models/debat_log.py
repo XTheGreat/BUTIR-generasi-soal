@@ -12,6 +12,7 @@ class DebatLog(Base):
     butir_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("butir_soal.id", ondelete="CASCADE")
     )
+    percobaan_ke: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     ronde: Mapped[int] = mapped_column(Integer)
     agen: Mapped[str] = mapped_column(String(20))
     output_json: Mapped[dict] = mapped_column(JSON)

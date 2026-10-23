@@ -10,7 +10,8 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import BloomChip from "@/components/ui/BloomChip";
 import EmptyState from "@/components/ui/EmptyState";
 import RondeIndicator from "@/components/ui/RondeIndicator";
-import { Key } from "lucide-react";
+import { Lock } from "lucide-react";
+import MathText from "@/components/ui/MathText";
 
 export default function ButirDitandaiPage() {
   const [butirList, setButirList] = useState<ButirSoal[]>([]);
@@ -95,7 +96,7 @@ export default function ButirDitandaiPage() {
 
               <div className="mb-4">
                 <p className="font-serif text-base sm:text-lg text-[var(--ink)] leading-relaxed">
-                  {butir.pertanyaan}
+                  <MathText text={butir.pertanyaan} />
                 </p>
               </div>
 
@@ -115,12 +116,14 @@ export default function ButirDitandaiPage() {
                         {key}.
                       </span>
                       <span className="font-serif flex-1 leading-normal">
-                        {val}
+                        <MathText text={val} />
                       </span>
                       {isKey && (
-                        <span className="inline-flex items-center gap-1.5 font-sans text-xs text-[#1F6B3A] font-medium shrink-0 pt-0.5">
-                          <Key size={13} strokeWidth={2} />
-                          <span>Kunci</span>
+                        <span
+                          className="inline-flex items-center text-[#1F6B3A] shrink-0 pt-0.5"
+                          title="Kunci jawaban"
+                        >
+                          <Lock size={14} strokeWidth={2} aria-label="Kunci jawaban" />
                         </span>
                       )}
                     </div>
@@ -134,7 +137,7 @@ export default function ButirDitandaiPage() {
                     Pembahasan Naskah
                   </div>
                   <p className="font-serif text-[var(--ink)] leading-relaxed text-sm">
-                    {butir.pembahasan}
+                    <MathText text={butir.pembahasan} />
                   </p>
                 </div>
               )}

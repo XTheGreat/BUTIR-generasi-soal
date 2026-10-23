@@ -45,9 +45,53 @@ export interface ButirSoal {
   updated_at: string;
 }
 
+export interface ButirTertunda {
+  id: string;
+  kisi_kisi_id: string;
+  kisi_kisi_label: string;
+  level_bloom: string;
+  status: string;
+  ronde_saat_ini: number;
+  percobaan_ke: number;
+  alasan_tertunda: string | null;
+  updated_at: string;
+}
+
+export interface HistoryDebatTerakhir {
+  kisi_kisi_id: string;
+  label: string;
+  mulai: string;
+  selesai: string;
+  total: number;
+  hitung: Record<string, number>;
+  items: {
+    id: string;
+    level_bloom: string;
+    status: string;
+    ronde_saat_ini: number;
+    percobaan_ke: number;
+    pertanyaan: string;
+    // Hanya terisi pada mode lengkap (?lengkap=true).
+    pilihan?: Record<string, string> | null;
+    kunci_jawaban?: string | null;
+    pembahasan?: string | null;
+  }[];
+}
+
+export interface RiwayatPercobaan {
+  id: string;
+  percobaan_ke: number;
+  hasil: string;
+  ronde_terakhir: number;
+  alasan: string | null;
+  mulai: string;
+  selesai: string | null;
+}
+
 export interface DebatLog {
   id: string;
   butir_id: string;
+  percobaan_ke: number;
   ronde: number;
   agen: string;
   output_json: Record<string, any>;

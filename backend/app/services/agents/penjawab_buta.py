@@ -28,13 +28,18 @@ async def jalankan(draft: dict) -> dict:
         D=pilihan.get("D", ""),
     )
 
+    if settings.DEFAULT_PROVIDER == "openai" and settings.get_openai_keys():
+        provider = "openai"
+        model = settings.OPENAI_MODEL_PENJAWAB_BUTA
+    else:
+        provider = "groq"
+        model = settings.GROQ_MODEL_PENJAWAB_BUTA
+
     result = await panggil_llm(
-        provider="groq",
-        model=settings.GROQ_MODEL_PENJAWAB_BUTA,
+        provider=provider,
+        model=model,
         system_prompt=system_prompt,
         user_prompt="Jawab soal di atas.",
         max_tokens=600,
     )
     return result
-
-

@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import BloomChip from "@/components/ui/BloomChip";
 import EmptyState from "@/components/ui/EmptyState";
+import MathText from "@/components/ui/MathText";
 
 export default function RakitUjianPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function RakitUjianPage() {
   const [durasi, setDurasi] = useState(60);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch("/api/bank-soal")
@@ -136,31 +138,65 @@ export default function RakitUjianPage() {
               </Button>
             </div>
 
-            <div className="divide-y divide-[var(--line)] max-h-96 overflow-y-auto">
-              {butirList.map((butir, i) => (
-                <label
-                  key={butir.id}
-                  className="flex items-start gap-3 py-2.5 px-2 hover:bg-[var(--surface)] cursor-pointer select-none transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(butir.id)}
-                    onChange={() => toggle(butir.id)}
-                    className="mt-1 accent-[var(--accent)]"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-xs text-[var(--ink-muted)]">
-                        #{i + 1}
-                      </span>
-                      <BloomChip level={butir.level_bloom} />
+            <div className="divide-y divide-[var(--line)] max-h-[480px] overflow-y-auto">
+              {butirList.map((butir, i) => {
+                const isPreview = previewId === butir.id;
+                return (
+                  <div key={butir.id} className="transition-colors duration-[140ms]">
+                    <div className="flex items-start gap-3 py-2.5 px-2 hover:bg-[var(--surface)] cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(butir.id)}
+                        onChange={() => toggle(butir.id)}
+                        className="mt-1 accent-[var(--accent)]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-xs text-[var(--ink-muted)]">
+                            #{i + 1}
+                          </span>
+                          <BloomChip level={butir.level_bloom} />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewId(isPreview ? null : butir.id);
+                            }}
+                            className="ml-auto text-[11px] text-[var(--accent)] hover:underline font-medium focus-visible:outline-none"
+                          >
+                            {isPreview ? "Tutup" : "Pratinjau"}
+                          </button>
+                        </div>
+                        <p
+                          className={`font-serif text-sm text-[var(--ink)] leading-relaxed ${
+                            isPreview ? "" : "line-clamp-2"
+                          }`}
+                          onClick={() => toggle(butir.id)}
+                        >
+                          <MathText text={butir.pertanyaan} />
+                        </p>
+                      </div>
                     </div>
-                    <p className="font-serif text-sm text-[var(--ink)] line-clamp-2 leading-relaxed">
-                      {butir.pertanyaan}
-                    </p>
+                    {isPreview && butir.pilihan && (
+                      <div className="pl-10 pr-3 pb-3 space-y-1.5">
+                        {Object.entries(butir.pilihan).map(([key, val]) => (
+                          <div
+                            key={key}
+                            className="flex items-start gap-2 text-sm py-1 px-2 bg-[var(--surface)] border border-[var(--line)] rounded"
+                          >
+                            <span className="font-mono text-xs font-semibold text-[var(--ink-muted)] w-5 shrink-0 pt-0.5">
+                              {key}.
+                            </span>
+                            <span className="font-serif text-[var(--ink)] text-sm leading-normal">
+                              <MathText text={val} />
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </label>
-              ))}
+                );
+              })}
             </div>
           </div>
 

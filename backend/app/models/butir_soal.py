@@ -18,6 +18,8 @@ class ButirSoal(Base):
     bobot_poin: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(20), default="draft")
     ronde_saat_ini: Mapped[int] = mapped_column(Integer, default=0)
+    percobaan_ke: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    alasan_tertunda: Mapped[str | None] = mapped_column(Text, nullable=True)
     prediksi_kesukaran: Mapped[float | None] = mapped_column(Float, nullable=True)
     rujukan_chunk_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("materi_chunks.id"), nullable=True

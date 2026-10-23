@@ -7,6 +7,8 @@ import { Laporan } from "@/lib/types";
 import PageHeader from "@/components/ui/PageHeader";
 import Button from "@/components/ui/Button";
 import BloomChip from "@/components/ui/BloomChip";
+import { PackageOpen } from "lucide-react";
+import MathText from "@/components/ui/MathText";
 
 export default function LaporanPage({
   params,
@@ -148,20 +150,37 @@ export default function LaporanPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
-              {laporan.analisis_butir.map((item, i) => {
-                const predPct =
-                  item.prediksi_kesukaran !== null
-                    ? Math.round(item.prediksi_kesukaran * 100)
-                    : null;
-                const aktPct = Math.round(item.tingkat_kesukaran_aktual * 100);
-                const delta = predPct !== null ? aktPct - predPct : null;
-                const isDiscrepant =
-                  (delta !== null && Math.abs(delta) >= 25) ||
-                  item.daya_beda < 0.2;
+              {laporan.analisis_butir.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-12 text-center text-xs text-[var(--ink-muted)] font-normal"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2 select-none py-2">
+                      <PackageOpen
+                        size={40}
+                        strokeWidth={1.25}
+                        className="text-[var(--ink-muted)]/65"
+                      />
+                      <span>Belum ada data analisis butir untuk paket ujian ini.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                laporan.analisis_butir.map((item, i) => {
+                  const predPct =
+                    item.prediksi_kesukaran !== null
+                      ? Math.round(item.prediksi_kesukaran * 100)
+                      : null;
+                  const aktPct = Math.round(item.tingkat_kesukaran_aktual * 100);
+                  const delta = predPct !== null ? aktPct - predPct : null;
+                  const isDiscrepant =
+                    (delta !== null && Math.abs(delta) >= 25) ||
+                    item.daya_beda < 0.2;
 
-                return (
-                  <tr
-                    key={item.butir_id}
+                  return (
+                    <tr
+                      key={item.butir_id}
                     className="hover:bg-[var(--surface)]/60 transition-colors duration-140"
                   >
                     <td className="px-3 py-2.5 font-mono text-xs text-[var(--ink-muted)] tabular-nums">
@@ -169,7 +188,7 @@ export default function LaporanPage({
                     </td>
                     <td className="px-3 py-2.5 max-w-sm">
                       <p className="font-serif text-sm text-[var(--ink)] line-clamp-2 leading-relaxed">
-                        {item.pertanyaan}
+                        <MathText text={item.pertanyaan} />
                       </p>
                     </td>
                     <td className="px-3 py-2.5">
@@ -178,7 +197,7 @@ export default function LaporanPage({
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2 font-mono text-xs tabular-nums">
                         <span className="text-[var(--ink-muted)]">
-                          {predPct !== null ? `${predPct}%` : "—"}
+                          {predPct !== null ? `${predPct}%` : "-"}
                         </span>
                         <span className="text-[var(--line-strong)]">→</span>
                         <span className="font-medium text-[var(--ink)]">
@@ -227,7 +246,7 @@ export default function LaporanPage({
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

@@ -1,15 +1,272 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_, func, case
 from app.database import get_db
 from app.models.user import User
+from app.models.kisi_kisi import KisiKisi, kisi_kisi_materi
+from app.models.materi import Materi
 from app.models.butir_soal import ButirSoal
 from app.models.debat_log import DebatLog
-from app.schemas.butir import ButirSoalResponse, ButirSoalUpdate, DebatLogResponse
+from app.models.riwayat_percobaan import RiwayatPercobaan
+from app.schemas.butir import (
+    ButirSoalResponse,
+    ButirSoalUpdate,
+    ButirTertundaResponse,
+    DebatLogResponse,
+    HistoryButirItem,
+    HistoryDebatTerakhir,
+    RiwayatPercobaanResponse,
+)
 from app.core.deps import get_current_guru
+from app.services.agents.orchestrator import (
+    ALASAN_DIHENTIKAN,
+    antrekan_retry,
+    jalankan_antrean_retry,
+)
 
 router = APIRouter(prefix="/api/butir", tags=["butir"])
+
+
+async def _butir_milik_guru(db: AsyncSession, butir_id: uuid.UUID, guru: User) -> ButirSoal:
+    butir = (
+        await db.execute(select(ButirSoal).where(ButirSoal.id == butir_id))
+    ).scalar_one_or_none()
+    if not butir:
+        raise HTTPException(status_code=404, detail="Butir tidak ditemukan")
+    kk = (
+        await db.execute(select(KisiKisi).where(KisiKisi.id == butir.kisi_kisi_id))
+    ).scalar_one_or_none()
+    if not kk or kk.guru_id != guru.id:
+        raise HTTPException(status_code=403, detail="Bukan butir Anda")
+    return butir
+
+
+def _label_kisi_kisi(kk: KisiKisi, judul_materi: list[str]) -> str:
+    judul = ", ".join(judul_materi)
+    if kk.cakupan_bab:
+        return f"{judul} ({kk.cakupan_bab})" if judul else kk.cakupan_bab
+    return judul or "Kisi-kisi tanpa materi"
+
+
+async def _judul_materi_per_kisi(
+    db: AsyncSession, kisi_ids: set[uuid.UUID]
+) -> dict[uuid.UUID, list[str]]:
+    judul_per_kisi: dict[uuid.UUID, list[str]] = {}
+    if kisi_ids:
+        materi_rows = await db.execute(
+            select(kisi_kisi_materi.c.kisi_kisi_id, Materi.judul)
+            .join(Materi, Materi.id == kisi_kisi_materi.c.materi_id)
+            .where(kisi_kisi_materi.c.kisi_kisi_id.in_(kisi_ids))
+        )
+        for kisi_id, judul in materi_rows.all():
+            judul_per_kisi.setdefault(kisi_id, []).append(judul)
+    return judul_per_kisi
+
+
+async def _respons_tertunda(db: AsyncSession, baris) -> list[ButirTertundaResponse]:
+    judul_per_kisi = await _judul_materi_per_kisi(db, {kk.id for _, kk in baris})
+
+    return [
+        ButirTertundaResponse(
+            id=b.id,
+            kisi_kisi_id=b.kisi_kisi_id,
+            kisi_kisi_label=_label_kisi_kisi(kk, judul_per_kisi.get(kk.id, [])),
+            level_bloom=b.level_bloom,
+            status=b.status,
+            ronde_saat_ini=b.ronde_saat_ini,
+            percobaan_ke=b.percobaan_ke,
+            alasan_tertunda=b.alasan_tertunda,
+            updated_at=b.updated_at,
+        )
+        for b, kk in baris
+    ]
+
+
+@router.get("/history-terakhir", response_model=HistoryDebatTerakhir | None)
+async def get_history_debat_terakhir(
+    lengkap: bool = Query(False, description="Sertakan semua butir beserta isinya"),
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    History debat untuk sidebar: HANYA satu generasi (kisi-kisi) terakhir yang sudah
+    selesai diproses. Generasi yang masih berjalan (ada butir draft/debating) dilewati,
+    jadi saat soal baru dibuat yang tampil tetap generasi sebelumnya. Butir 'tertunda'
+    dihitung sudah diproses.
+    """
+    sedang_jalan = func.sum(
+        case((ButirSoal.status.in_(["draft", "debating"]), 1), else_=0)
+    )
+    kisi_rows = await db.execute(
+        select(KisiKisi.id, func.count(ButirSoal.id), sedang_jalan)
+        .join(ButirSoal, ButirSoal.kisi_kisi_id == KisiKisi.id)
+        .where(KisiKisi.guru_id == guru.id)
+        .group_by(KisiKisi.id)
+        .order_by(KisiKisi.created_at.desc())
+    )
+    kisi_id = next(
+        (kid for kid, total, jalan in kisi_rows.all() if total > 0 and not jalan), None
+    )
+    if kisi_id is None:
+        return None
+
+    kk = (await db.execute(select(KisiKisi).where(KisiKisi.id == kisi_id))).scalar_one()
+    butir_rows = (
+        (
+            await db.execute(
+                select(ButirSoal)
+                .where(ButirSoal.kisi_kisi_id == kisi_id)
+                .order_by(ButirSoal.created_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    judul = await _judul_materi_per_kisi(db, {kisi_id})
+    # Sidebar hanya butuh 2 butir pratinjau; halaman History meminta semuanya.
+    tampil = butir_rows if lengkap else butir_rows[:2]
+
+    hitung: dict[str, int] = {}
+    for b in butir_rows:
+        hitung[b.status] = hitung.get(b.status, 0) + 1
+
+    return HistoryDebatTerakhir(
+        kisi_kisi_id=kisi_id,
+        label=_label_kisi_kisi(kk, judul.get(kisi_id, [])),
+        mulai=min(b.created_at for b in butir_rows),
+        selesai=max(b.updated_at for b in butir_rows),
+        total=len(butir_rows),
+        hitung=hitung,
+        items=[
+            HistoryButirItem(
+                id=b.id,
+                level_bloom=b.level_bloom,
+                status=b.status,
+                ronde_saat_ini=b.ronde_saat_ini,
+                percobaan_ke=b.percobaan_ke,
+                pertanyaan=b.pertanyaan,
+                pilihan=b.pilihan if lengkap else None,
+                kunci_jawaban=b.kunci_jawaban if lengkap else None,
+                pembahasan=b.pembahasan if lengkap else None,
+            )
+            for b in tampil
+        ],
+    )
+
+
+@router.get("/tertunda", response_model=list[ButirTertundaResponse])
+async def list_butir_tertunda(
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Butir 'tertunda' milik guru, ditambah butir yang sedang diulang (antrean/debat
+    dengan percobaan_ke > 1) supaya aksi Hentikan tetap tersedia.
+    """
+    result = await db.execute(
+        select(ButirSoal, KisiKisi)
+        .join(KisiKisi, KisiKisi.id == ButirSoal.kisi_kisi_id)
+        .where(
+            KisiKisi.guru_id == guru.id,
+            or_(
+                ButirSoal.status == "tertunda",
+                and_(
+                    ButirSoal.status.in_(["draft", "debating"]),
+                    ButirSoal.percobaan_ke > 1,
+                ),
+            ),
+        )
+        .order_by(ButirSoal.updated_at.desc())
+    )
+    return await _respons_tertunda(db, result.all())
+
+
+@router.get("/diulang", response_model=list[ButirTertundaResponse])
+async def list_butir_diulang(
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    """Semua butir milik guru yang pernah diulang (percobaan_ke > 1), apa pun statusnya sekarang."""
+    result = await db.execute(
+        select(ButirSoal, KisiKisi)
+        .join(KisiKisi, KisiKisi.id == ButirSoal.kisi_kisi_id)
+        .where(KisiKisi.guru_id == guru.id, ButirSoal.percobaan_ke > 1)
+        .order_by(ButirSoal.updated_at.desc())
+    )
+    return await _respons_tertunda(db, result.all())
+
+
+@router.post("/retry-semua", status_code=202)
+async def retry_semua_tertunda(
+    background_tasks: BackgroundTasks,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ButirSoal)
+        .join(KisiKisi, KisiKisi.id == ButirSoal.kisi_kisi_id)
+        .where(KisiKisi.guru_id == guru.id, ButirSoal.status == "tertunda")
+        .order_by(ButirSoal.created_at)
+    )
+    butir_list = result.scalars().all()
+    if not butir_list:
+        raise HTTPException(status_code=400, detail="Tidak ada butir tertunda untuk diulang")
+
+    ids = await antrekan_retry(db, butir_list)
+    background_tasks.add_task(jalankan_antrean_retry, ids)
+    return {"detail": f"{len(ids)} butir tertunda dimasukkan ke antrean", "jumlah": len(ids)}
+
+
+@router.post("/{butir_id}/retry", status_code=202)
+async def retry_butir(
+    butir_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    butir = await _butir_milik_guru(db, butir_id, guru)
+    if butir.status != "tertunda":
+        raise HTTPException(status_code=409, detail="Hanya butir berstatus tertunda yang bisa diulang")
+
+    ids = await antrekan_retry(db, [butir])
+    background_tasks.add_task(jalankan_antrean_retry, ids)
+    return {"detail": "Butir dimasukkan ke antrean", "id": str(butir_id)}
+
+
+@router.post("/{butir_id}/stop")
+async def stop_butir(
+    butir_id: uuid.UUID,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Hentikan satu butir yang sedang mengantre/berdebat. Cukup mengubah status ke
+    'tertunda'; proses yang berjalan memeriksa status ini di tiap titik cek.
+    """
+    butir = await _butir_milik_guru(db, butir_id, guru)
+    if butir.status not in ("draft", "debating"):
+        raise HTTPException(status_code=409, detail="Butir ini tidak sedang diproses")
+
+    butir.status = "tertunda"
+    butir.alasan_tertunda = ALASAN_DIHENTIKAN
+    await db.commit()
+    return {"detail": "Butir dihentikan", "id": str(butir_id)}
+
+
+@router.get("/{butir_id}/riwayat", response_model=list[RiwayatPercobaanResponse])
+async def get_riwayat_percobaan(
+    butir_id: uuid.UUID,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    await _butir_milik_guru(db, butir_id, guru)
+    result = await db.execute(
+        select(RiwayatPercobaan)
+        .where(RiwayatPercobaan.butir_id == butir_id)
+        .order_by(RiwayatPercobaan.percobaan_ke.desc())
+    )
+    return [RiwayatPercobaanResponse.model_validate(r) for r in result.scalars().all()]
 
 
 @router.get("", response_model=list[ButirSoalResponse])
@@ -18,7 +275,11 @@ async def list_butir(
     guru: User = Depends(get_current_guru),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(ButirSoal)
+    query = (
+        select(ButirSoal)
+        .join(KisiKisi, KisiKisi.id == ButirSoal.kisi_kisi_id)
+        .where(KisiKisi.guru_id == guru.id)
+    )
     if status:
         query = query.where(ButirSoal.status == status)
     query = query.order_by(ButirSoal.created_at.desc())
@@ -29,12 +290,18 @@ async def list_butir(
 @router.get("/{butir_id}/debat-log", response_model=list[DebatLogResponse])
 async def get_debat_log(
     butir_id: uuid.UUID,
+    percobaan_ke: int | None = Query(None, description="Default: percobaan terbaru"),
     guru: User = Depends(get_current_guru),
     db: AsyncSession = Depends(get_db),
 ):
+    butir = await _butir_milik_guru(db, butir_id, guru)
+
     result = await db.execute(
         select(DebatLog)
-        .where(DebatLog.butir_id == butir_id)
+        .where(
+            DebatLog.butir_id == butir_id,
+            DebatLog.percobaan_ke == (percobaan_ke or butir.percobaan_ke),
+        )
         .order_by(DebatLog.ronde, DebatLog.created_at)
     )
     return [DebatLogResponse.model_validate(log) for log in result.scalars().all()]
@@ -47,10 +314,7 @@ async def update_butir(
     guru: User = Depends(get_current_guru),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(ButirSoal).where(ButirSoal.id == butir_id))
-    butir = result.scalar_one_or_none()
-    if not butir:
-        raise HTTPException(status_code=404, detail="Butir tidak ditemukan")
+    butir = await _butir_milik_guru(db, butir_id, guru)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():

@@ -10,6 +10,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import BloomPieChart from "@/components/ui/BloomPieChart";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { FolderOpen } from "lucide-react";
 
 const BLOOM_LEVELS = ["C1", "C2", "C3", "C4", "C5", "C6"];
 const BLOOM_LABELS: Record<string, string> = {
@@ -37,6 +39,7 @@ export default function KisiKisiPage() {
   const [cakupanBab, setCakupanBab] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     apiFetch("/api/materi")
@@ -57,7 +60,7 @@ export default function KisiKisiPage() {
     );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handlePreSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (bloomTotal !== 100) {
       setError(`Total persentase distribusi Bloom harus tepat 100% (saat ini ${bloomTotal}%).`);
@@ -68,6 +71,11 @@ export default function KisiKisiPage() {
       return;
     }
     setError("");
+    setShowConfirm(true);
+  }
+
+  async function handleConfirmGenerate() {
+    setShowConfirm(false);
     setLoading(true);
 
     const distribusi: Record<string, number> = {};
@@ -95,8 +103,16 @@ export default function KisiKisiPage() {
     } finally {
       setLoading(false);
     }
-
   }
+
+  const selectedMateriNames = materiList
+    .filter((m) => selectedMateri.includes(m.id))
+    .map((m) => m.judul);
+
+  const activeBloomLevels = Object.entries(bloom)
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => `${k} (${v}%)`)
+    .join(", ");
 
   return (
     <div>
@@ -105,7 +121,7 @@ export default function KisiKisiPage() {
         description="Spesifikasi teknis proporsi kognitif Taksonomi Bloom dan materi rujukan butir ujian."
       />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
+      <form onSubmit={handlePreSubmit} className="flex flex-col gap-6 w-full">
         
         <div className="border border-[var(--line)] bg-[var(--surface)] p-5 rounded-lg">
           <label className="text-sm font-medium text-[var(--ink)] block mb-1">
@@ -116,12 +132,19 @@ export default function KisiKisiPage() {
           </p>
 
           {materiList.length === 0 ? (
-            <div className="border border-[var(--line)] bg-[var(--canvas)] p-4 text-xs text-[var(--ink-muted)] rounded-lg">
-              Belum ada materi ajar terdaftar.{" "}
-              <Link href="/materi" className="text-[var(--accent)] underline font-medium">
-                Unggah dokumen materi terlebih dahulu
-              </Link>
-              .
+            <div className="border border-dashed border-[var(--line-strong)]/40 bg-[var(--surface)]/40 p-6 text-center text-xs text-[var(--ink-muted)] rounded-lg flex flex-col items-center justify-center gap-2 select-none">
+              <FolderOpen
+                size={40}
+                strokeWidth={1.25}
+                className="text-[var(--ink-muted)]/65 fill-[var(--ink-muted)]/10"
+              />
+              <p>
+                Belum ada materi ajar terdaftar.{" "}
+                <Link href="/materi" className="text-[var(--accent)] underline font-medium hover:underline">
+                  Unggah dokumen materi terlebih dahulu
+                </Link>
+                .
+              </p>
             </div>
           ) : (
             <div className="border border-[var(--line)] bg-[var(--canvas)] divide-y divide-[var(--line)] max-h-48 overflow-y-auto rounded-lg">
@@ -222,6 +245,8 @@ export default function KisiKisiPage() {
             placeholder="Misal: Fokuskan pada Hukum Newton II dan penerapannya pada bidang miring..."
             helper="Instruksi tambahan bagi Agen Penyusun untuk mempersempit ruang lingkup soal"
             rows={3}
+            autoResize
+            maxHeight={220}
           />
         </div>
 
@@ -241,6 +266,34 @@ export default function KisiKisiPage() {
           </Button>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Mulai Debat Multi-Agen"
+        description="Proses ini akan memanggil agen AI secara berurutan untuk menyusun, mengkritik, dan memvalidasi butir soal. Pastikan spesifikasi sudah benar."
+        confirmLabel="Mulai Generasi"
+        onConfirm={handleConfirmGenerate}
+        onCancel={() => setShowConfirm(false)}
+      >
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between items-baseline">
+            <span className="text-[var(--ink-muted)] text-xs">Jumlah butir target</span>
+            <span className="font-mono tabular-nums font-medium text-[var(--ink)]">{jumlahButir}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[var(--ink-muted)] text-xs">Materi rujukan</span>
+            <span className="text-xs text-[var(--ink)] text-right max-w-[200px] truncate">
+              {selectedMateriNames.join(", ")}
+            </span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[var(--ink-muted)] text-xs">Distribusi Bloom</span>
+            <span className="font-mono text-[11px] text-[var(--ink)]">
+              {activeBloomLevels}
+            </span>
+          </div>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

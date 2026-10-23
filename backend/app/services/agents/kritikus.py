@@ -27,12 +27,18 @@ async def jalankan(chunk: str, draft: dict) -> dict:
         draft_json=json.dumps(draft, ensure_ascii=False),
     )
 
+    if settings.DEFAULT_PROVIDER == "openai" and settings.get_openai_keys():
+        provider = "openai"
+        model = settings.OPENAI_MODEL_KRITIKUS
+    else:
+        provider = "groq"
+        model = settings.GROQ_MODEL_KRITIKUS
+
     result = await panggil_llm(
-        provider="groq",
-        model=settings.GROQ_MODEL_KRITIKUS,
+        provider=provider,
+        model=model,
         system_prompt=system_prompt,
         user_prompt="Berikan kritik terhadap butir soal di atas.",
         max_tokens=600,
     )
     return result
-

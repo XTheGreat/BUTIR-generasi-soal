@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { HasilUjian } from "@/lib/types";
+import MathText from "@/components/ui/MathText";
 
 export default function HasilUjianPage({
   params,
@@ -106,7 +107,7 @@ export default function HasilUjianPage({
                     #{idx + 1}
                   </span>
                   <p className="font-serif text-sm text-[var(--ink)] leading-relaxed flex-1">
-                    {item.pertanyaan}
+                    <MathText text={item.pertanyaan} />
                   </p>
                   <div className="shrink-0 font-mono text-xs">
                     {item.benar ? (

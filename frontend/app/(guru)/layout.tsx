@@ -9,7 +9,7 @@ import Topbar from "@/components/layout/Topbar";
 export default function GuruLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -35,12 +35,12 @@ export default function GuruLayout({ children }: { children: React.ReactNode }) 
         onClose={() => setSidebarOpen(false)}
         onToggle={() => setSidebarOpen((prev) => !prev)}
       />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto overflow-x-hidden">
         <Topbar
           isSidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         />
-        <main className="flex-1 p-5 sm:p-6 md:p-8 max-w-6xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto min-w-0">
           {children}
         </main>
       </div>

@@ -85,3 +85,54 @@ async def list_materi(
         select(Materi).where(Materi.guru_id == guru.id).order_by(Materi.created_at.desc())
     )
     return [MateriResponse.model_validate(m) for m in result.scalars().all()]
+
+
+@router.get("/{materi_id}/chunks-count")
+async def get_chunks_count(
+    materi_id: uuid.UUID,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Materi).where(Materi.id == materi_id))
+    materi = result.scalar_one_or_none()
+    if not materi:
+        raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
+    if materi.guru_id != guru.id:
+        raise HTTPException(status_code=403, detail="Bukan materi Anda")
+
+    chunks = await db.execute(
+        select(MateriChunk).where(MateriChunk.materi_id == materi_id)
+    )
+    return {"count": len(chunks.scalars().all())}
+
+
+@router.delete("/{materi_id}", status_code=204)
+async def delete_materi(
+    materi_id: uuid.UUID,
+    guru: User = Depends(get_current_guru),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Materi).where(Materi.id == materi_id))
+    materi = result.scalar_one_or_none()
+    if not materi:
+        raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
+    if materi.guru_id != guru.id:
+        raise HTTPException(status_code=403, detail="Bukan materi Anda")
+
+    if materi.file_path and os.path.exists(materi.file_path):
+        os.remove(materi.file_path)
+        md_path = f"{materi.file_path}.md"
+        if os.path.exists(md_path):
+            os.remove(md_path)
+
+    await db.execute(
+        select(MateriChunk).where(MateriChunk.materi_id == materi_id)
+    )
+    from sqlalchemy import delete as sql_delete
+    await db.execute(
+        sql_delete(MateriChunk).where(MateriChunk.materi_id == materi_id)
+    )
+
+    await db.delete(materi)
+    await db.commit()
+

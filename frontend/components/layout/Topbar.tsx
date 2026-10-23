@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getCurrentUser, logout } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
 import { PanelLeftOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -11,7 +12,10 @@ const routeNameMap: Record<string, string> = {
   materi: "Materi Ajar",
   "kisi-kisi": "Kisi-kisi",
   "butir-ditandai": "Butir Ditandai",
+  "butir-tertunda": "Butir Tertunda",
+  history: "History Debat",
   "bank-soal": "Bank Soal",
+  "daftar-ujian": "Daftar Ujian",
   "rakit-ujian": "Rakit Ujian",
   generasi: "Generasi Soal",
   ujian: "Detail Ujian",
@@ -56,6 +60,34 @@ export default function Topbar({
       window.removeEventListener("storage", updateActiveGen);
     };
   }, []);
+
+  // Tanda hanya dihapus oleh halaman progres, sehingga bisa tertinggal bila debat
+  // selesai (mis. lewat retry di halaman Butir Tertunda). Cek langsung ke server.
+  useEffect(() => {
+    if (!activeGenId) return;
+    let dibatalkan = false;
+    const cekMasihBerjalan = async () => {
+      try {
+        const data = await apiFetch(`/api/kisi-kisi/${activeGenId}/status`);
+        if (dibatalkan || !data || !data.total) return;
+        const berjalan = data.items.some(
+          (item: { status: string }) =>
+            item.status === "draft" || item.status === "debating"
+        );
+        if (!berjalan) {
+          localStorage.removeItem("butir_active_generation");
+          setActiveGenId(null);
+          window.dispatchEvent(new Event("generation_status_changed"));
+        }
+      } catch {}
+    };
+    cekMasihBerjalan();
+    const interval = setInterval(cekMasihBerjalan, 5000);
+    return () => {
+      dibatalkan = true;
+      clearInterval(interval);
+    };
+  }, [activeGenId]);
 
   const handleToggle = onToggleSidebar || onOpenMobileMenu;
 
@@ -116,18 +148,35 @@ export default function Topbar({
           </Link>
         )}
 
-        <div className="text-right hidden sm:block">
-          <span className="text-xs font-medium text-[var(--ink)] block truncate max-w-[140px]">
-            {user?.nama || "Guru Penguji"}
-          </span>
-          <span className="text-[11px] text-[var(--ink-muted)] block truncate max-w-[140px]">
-            {user?.email || "guru@madrasah.id"}
-          </span>
+        <div className="flex items-center gap-2.5 hidden sm:flex">
+          <div className="text-right">
+            <span className="text-xs font-medium text-[var(--ink)] block truncate max-w-[140px]">
+              {user?.nama || "Guru Penguji"}
+            </span>
+            <span className="text-[11px] text-[var(--ink-muted)] block truncate max-w-[140px]">
+              {user?.email || "guru@madrasah.id"}
+            </span>
+          </div>
+          <div
+            className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center shrink-0"
+            title={user?.nama || "Guru Penguji"}
+          >
+            <span className="text-[11px] font-sans font-semibold text-white leading-none select-none">
+              {(() => {
+                const nama = user?.nama || "GP";
+                const parts = nama.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                }
+                return nama.slice(0, 2).toUpperCase();
+              })()}
+            </span>
+          </div>
         </div>
         <div className="h-4 w-px bg-[var(--line)] hidden sm:block" />
         <button
           onClick={logout}
-          className="text-xs text-[var(--ink-muted)] hover:text-[#A4262C] transition-colors py-1 focus-visible:outline-none"
+          className="text-xs text-[var(--ink-muted)] hover:text-[#A4262C] transition-colors duration-[140ms] py-1 focus-visible:outline-none"
         >
           Keluar
         </button>

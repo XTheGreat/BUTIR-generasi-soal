@@ -2,13 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routers import auth, materi, kisi_kisi, generasi, butir, bank_soal, ujian, siswa, laporan
-from app.database import engine, Base
+from app.database import engine, Base, tambah_kolom_yang_hilang
+from app.services.agents.orchestrator import pulihkan_proses_terputus
 
 import app.models.user  # noqa: F401
 import app.models.materi  # noqa: F401
 import app.models.kisi_kisi  # noqa: F401
 import app.models.butir_soal  # noqa: F401
 import app.models.debat_log  # noqa: F401
+import app.models.riwayat_percobaan  # noqa: F401
 import app.models.paket_ujian  # noqa: F401
 import app.models.jawaban_siswa  # noqa: F401
 
@@ -39,6 +41,8 @@ app.include_router(laporan.router)
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(tambah_kolom_yang_hilang)
+    await pulihkan_proses_terputus()
 
 
 @app.get("/")

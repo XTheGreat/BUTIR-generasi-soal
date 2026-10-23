@@ -1,4 +1,4 @@
-import React from "react";
+import { PackageOpen } from "lucide-react";
 
 export interface Column<T> {
   key: string;
@@ -45,9 +45,16 @@ export default function Table<T extends Record<string, any>>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-8 text-center text-sm text-[var(--ink-muted)] font-normal"
+                className="px-4 py-12 sm:py-16 text-center text-sm text-[var(--ink-muted)] font-normal"
               >
-                {emptyMessage}
+                <div className="flex flex-col items-center justify-center gap-2.5 select-none py-2">
+                  <PackageOpen
+                    size={44}
+                    strokeWidth={1.25}
+                    className="text-[var(--ink-muted)]/65"
+                  />
+                  <span>{emptyMessage}</span>
+                </div>
               </td>
             </tr>
           ) : (

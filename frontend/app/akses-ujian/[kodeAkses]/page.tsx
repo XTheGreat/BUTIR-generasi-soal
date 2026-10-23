@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { SoalUjian } from "@/lib/types";
 import Button from "@/components/ui/Button";
+import MathText from "@/components/ui/MathText";
 
 export default function UjianSiswaPage({
   params,
@@ -284,7 +285,7 @@ export default function UjianSiswaPage({
 
               <div className="mb-6 sm:mb-8">
                 <p className="font-serif text-[18px] sm:text-[20px] text-[var(--ink)] leading-relaxed">
-                  {currentSoal.pertanyaan}
+                  <MathText text={currentSoal.pertanyaan} />
                 </p>
               </div>
 
@@ -315,7 +316,7 @@ export default function UjianSiswaPage({
                         </span>
                         
                         <span className="font-serif text-base sm:text-lg leading-normal">
-                          {val}
+                          <MathText text={val} />
                         </span>
                       </div>
 

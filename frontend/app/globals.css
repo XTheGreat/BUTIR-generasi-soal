@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -22,9 +22,10 @@
   --color-status-netral: var(--status-netral);
   --color-status-netral-bg: var(--status-netral-bg);
 
-  --font-serif: 'Merriweather', Georgia, serif;
-  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-serif: 'Times New Roman', Times, 'Tinos', serif;
+  --font-sans: 'Times New Roman', Times, 'Tinos', serif;
+  --font-mono: 'Times New Roman', Times, 'Tinos', serif;
+  --font-times: 'Times New Roman', Times, 'Tinos', serif;
 }
 
 :root {
@@ -51,12 +52,21 @@
   --shadow-overlay: 0 4px 16px -2px rgba(24, 28, 37, 0.08);
 }
 
+body, button, input, optgroup, select, textarea {
+  font-family: 'Times New Roman', Times, 'Tinos', serif;
+}
+
 body {
-  font-family: var(--font-sans);
   background-color: var(--canvas);
   color: var(--ink);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers and tabular figures in Times New Roman */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: 'Times New Roman', Times, 'Tinos', serif;
 }
 
 /* Heading balance and line heights */
